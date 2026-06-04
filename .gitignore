@@ -1,0 +1,22 @@
+# Local Virtual Environment (Your sidebar shows 'dlproject')
+dlproject/
+.venv/
+venv/
+
+# Python Cache & Workspace files
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.vscode/
+
+# Dataset Files (Your CSV data)
+gaze_data.csv
+
+# Large Machine Learning Models
+gaze_model.pkl
+face_recognizer_model.yml
+user_map.pkl
+yolov8n.pt
+
+# User Biometric Images Folder
+face_data/
