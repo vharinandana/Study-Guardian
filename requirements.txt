@@ -1,6 +1,6 @@
 streamlit
 opencv-contrib-python-headless
-mediapipe
+mediapipe==0.10.14
 ultralytics
 scikit-learn
 pandas

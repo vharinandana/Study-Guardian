@@ -1,5 +1,4 @@
 import cv2
-import mediapipe as mp
 import joblib
 import numpy as np
 import pandas as pd 
@@ -11,6 +10,14 @@ import streamlit as st
 from scipy.io import wavfile
 import io
 from ultralytics import YOLO
+
+import mediapipe as mp
+
+try:
+    mp_face_mesh = mp.solutions.face_mesh
+except AttributeError:
+    from mediapipe.python.solutions import face_mesh
+    mp_face_mesh = face_mesh
 
 # 🔒 Safe cross-platform import for application window tracking
 try:
