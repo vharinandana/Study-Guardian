@@ -1,8 +1,8 @@
 streamlit
-opencv-python-headless
-mediapipe-silicon; python_version >= "3.12" or platform_system != "Windows"
-mediapipe; python_version < "3.12" and platform_system == "Windows"
+opencv-contrib-python-headless
+mediapipe
 ultralytics
 scikit-learn
 pandas
-pygetwindow; platform_system=="Windows"
+joblib
+scipy
