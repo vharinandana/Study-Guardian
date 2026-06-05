@@ -27,6 +27,7 @@ try:
 except (ModuleNotFoundError, Exception):
     pyttsx3 = None
     TTS_AVAILABLE = False
+
 # --- STREAMLIT CONFIG & INITIAL PAGE SETUP ---
 st.set_page_config(page_title="Study Guardian Workspace", layout="wide", page_icon="🎯")
 
@@ -54,14 +55,22 @@ if not os.path.exists(FACE_DATA_DIR):
 
 # --- CORE RESOURCE OPTIMIZATION (CACHED MODEL LOADING) ---
 @st.cache_resource
-@st.cache_resource
 def load_core_models():
-    # Direct explicit import to bypass Python 3.14 dynamic mapping bugs
-    from mediapipe.python.solutions import face_mesh as mp_face_mesh
+    # 1. Initialize MediaPipe Face Mesh safely
+    try:
+        mp_face_mesh = mp.solutions.face_mesh
+    except AttributeError:
+        try:
+            import mediapipe.python.solutions.face_mesh as mp_face_mesh
+        except ModuleNotFoundError:
+            from mediapipe.framework.formats import landmark_pb2
+            mp_face_mesh = mp.components.processors.FaceLandmarker
+            
+    # 2. Load your custom Gaze Model classifier
+    model = joblib.load('gaze_model.pkl')
     
-    # Keep the rest of your model loading lines exactly the same:
-    # model = joblib.load('gaze_model.pkl')
-    # object_model = YOLO('yolov8n.pt')
+    # 3. Load the YOLOv8 model
+    object_model = YOLO('yolov8n.pt')
     
     return mp_face_mesh, model, object_model
 
@@ -81,7 +90,7 @@ face_recognizer, user_mapping = get_face_recognizer()
 
 # --- STEP-BY-STEP APPLICATION CONTROL FLOW STATE MACHINE ---
 if "app_step" not in st.session_state:
-    st.session_state.app_step = "QUESTION_GATE"  # Steps: QUESTION_GATE -> VIEW_REPORT -> READY_TO_START -> ACTIVE_SESSION
+    st.session_state.app_step = "QUESTION_GATE"  
 if "registered_users" not in st.session_state:
     st.session_state.registered_users = list(user_mapping.values()) if user_mapping else ["Default_Student"]
 if "active_user" not in st.session_state:
@@ -112,10 +121,10 @@ def play_cross_platform_beep(frequency, duration_ms):
     byte_io = io.BytesIO()
     wavfile.write(byte_io, sample_rate, audio_encoded)
     st.audio(byte_io.getvalue(), format="audio/wav", autoplay=True, key=f"bp_{time.time_ns()}")
+
 def _execute_voice_worker(message):
-    # Only try to trigger voice output if the library successfully imported
     if not TTS_AVAILABLE or pyttsx3 is None:
-        return  # Safely exit on the cloud server without doing anything
+        return  
         
     try:
         engine = pyttsx3.init()
@@ -126,7 +135,8 @@ def _execute_voice_worker(message):
         del engine  
     except Exception: 
         pass
-    finally: st.session_state.voice_active = False
+    finally: 
+        st.session_state.voice_active = False
 
 def speak_warning_async(message):
     if not st.session_state.voice_active:
@@ -157,7 +167,6 @@ def train_face_recognizer():
         joblib.dump(current_mapping, USER_MAP_PATH)
         return True
     return False
-
 
 # ==============================================================================
 # STAGE 1: THE INITIAL QUESTION GATE
@@ -213,22 +222,18 @@ if st.session_state.app_step == "QUESTION_GATE":
                         else: st.error("No clear face targets identified.")
                     else: st.error("Camera drivers unresponsive.")
 
-
 # ==============================================================================
 # STAGE 2: VIEW REPORT CARD & PERFORMANCE GRAPH
 # ==============================================================================
 elif st.session_state.app_step == "VIEW_REPORT":
     st.markdown("<div class='step-box'><h3>Step 2: Profile Selection & Historical Report Performance Hub</h3></div>", unsafe_allow_html=True)
     
-    # Let user pick which profile report card they want to see
     selected_user = st.selectbox("Select Profile To Pull Report Cards For:", options=st.session_state.registered_users)
     st.session_state.active_user = selected_user
     
-    # Calculate performance data points securely
     tf_count = st.session_state.total_frames if st.session_state.total_frames > 0 else 1
     focus_pct = ((st.session_state.center_frames / tf_count) * 100)
     
-    # RENDER THE COMPREHENSIVE PERFORMANCE CARD REPORT
     st.markdown("<div class='report-card'>", unsafe_allow_html=True)
     st.markdown(f"### 📑 Focus Analysis Report Card: Profile - {st.session_state.active_user}")
     rc_col1, rc_col2, rc_col3 = st.columns(3)
@@ -243,7 +248,6 @@ elif st.session_state.app_step == "VIEW_REPORT":
         st.metric("Mobile Handset Detections", f"{st.session_state.phone_frames} Frames")
     st.markdown("</div>", unsafe_allow_html=True)
     
-    # GRAPH MATRIX VISUAL SYSTEM
     g_col1, g_col2 = st.columns([2, 1])
     with g_col1:
         st.markdown("#### Focus Timeline Performance Curve")
@@ -269,7 +273,6 @@ elif st.session_state.app_step == "VIEW_REPORT":
         if st.button("Proceed To Setup Sessions Constraints ➡️", type="primary"):
             st.session_state.app_step = "READY_TO_START"
             st.rerun()
-
 
 # ==============================================================================
 # STAGE 3: THE START SESSION CONFIGURATION HUB
@@ -299,9 +302,7 @@ elif st.session_state.app_step == "READY_TO_START":
             st.session_state.app_step = "VIEW_REPORT"
             st.rerun()
     with btn_c2:
-        # THE CLEAR START SESSION BUTTON REQUESTED
         if st.button("🚀 LAUNCH CAMERA AND START ACTIVE SESSION NOW", type="primary"):
-            # Flush previous run parameters cleanly
             st.session_state.start_time = time.time()
             st.session_state.total_frames = 0
             st.session_state.center_frames = 0
@@ -315,14 +316,12 @@ elif st.session_state.app_step == "READY_TO_START":
             st.session_state.app_step = "ACTIVE_SESSION"
             st.rerun()
 
-
 # ==============================================================================
 # STAGE 4: LIVE WEBCAM ACTIVE MONITORING PROCESSING LOOP
 # ==============================================================================
 elif st.session_state.app_step == "ACTIVE_SESSION":
     st.markdown("<div class='step-box'><h3>🔴 Step 4: Active Computer Vision Security Stream Active</h3></div>", unsafe_allow_html=True)
     
-    # Stop Session button available during live loop runs
     if st.button("🛑 STOP AND TERMINATE SESSION RUN"):
         st.session_state.app_step = "VIEW_REPORT"
         st.rerun()
@@ -340,6 +339,7 @@ elif st.session_state.app_step == "ACTIVE_SESSION":
     cap = cv2.VideoCapture(0)
     away_start_time = None
     
+    # Secure active session framework run loop
     while cap.isOpened() and st.session_state.app_step == "ACTIVE_SESSION":
         success, frame = cap.read()
         if not success: break
@@ -390,7 +390,8 @@ elif st.session_state.app_step == "ACTIVE_SESSION":
                 try:
                     raw_prediction = model.predict(features_df)[0]
                     probabilities = model.predict_proba(features_df)[0]
-                    prediction = raw_prediction if (probabilities[list(model.classes_).index(raw_prediction)] >= 0.75) else "center"
+                    # Lowercase conversion protects the categorization logic strings
+                    prediction = raw_prediction.lower() if (probabilities[list(model.classes_).index(raw_prediction)] >= 0.75) else "center"
                 except Exception: prediction = "center"
 
         phone_in_view = False
@@ -403,11 +404,12 @@ elif st.session_state.app_step == "ACTIVE_SESSION":
             prediction = "multi-face distraction"
             st.session_state.multiface_frames += 1
 
+        # Bug Fixed: Enforced strictly lowercase tracking variables matching model parameters
         if prediction == "center" and not phone_in_view: 
             st.session_state.center_frames += 1
             if st.session_state.total_frames % 30 == 0: st.session_state.alert_streak = max(0, st.session_state.alert_streak - 1)
         elif prediction == "closed": st.session_state.sleep_frames += 1
-        elif prediction in ["Distracted", "Distracted"]: st.session_state.distracted_frames += 1
+        elif prediction in ["distracted", "left", "right"]: st.session_state.distracted_frames += 1
         elif prediction == "downward": st.session_state.downward_frames += 1
         if phone_in_view: st.session_state.phone_frames += 1
 
@@ -416,7 +418,7 @@ elif st.session_state.app_step == "ACTIVE_SESSION":
             new_entry = pd.DataFrame([{"Elapsed Time": round(elapsed, 1), "Focus Score": round(current_score, 2)}])
             st.session_state.timeline_history = pd.concat([st.session_state.timeline_history, new_entry], ignore_index=True)
 
-        is_violating = (prediction in ["Distracted", "Distracted", "downward", "multi-face distraction"] or prediction == "closed" or phone_in_view)
+        is_violating = (prediction in ["distracted", "left", "right", "downward", "multi-face distraction"] or prediction == "closed" or phone_in_view)
         if is_violating:
             if away_start_time is None: away_start_time = current_time
             trigger_limit = st.session_state.sleep_threshold_val if prediction == "closed" else st.session_state.look_away_limit_val
@@ -435,14 +437,16 @@ elif st.session_state.app_step == "ACTIVE_SESSION":
                 elif st.session_state.alert_streak >= 3: 
                     play_cross_platform_beep(1500, 400)
                     
-                try:
-                    target_windows = gw.getWindowsWithTitle(st.session_state.target_study_window_val)
-                    if target_windows:
-                        study_win = target_windows[0]
-                        if not study_win.isActive:
-                            if study_win.isMinimized: study_win.restore()
-                            study_win.activate()
-                except Exception: pass
+                # Bug Fixed: Wrapped Windows Window Engine activation inside the cloud guardrail flag
+                if WINDOWS_MANAGEMENT_AVAILABLE and gw is not None:
+                    try:
+                        target_windows = gw.getWindowsWithTitle(st.session_state.target_study_window_val)
+                        if target_windows:
+                            study_win = target_windows[0]
+                            if not study_win.isActive:
+                                if study_win.isMinimized: study_win.restore()
+                                study_win.activate()
+                    except Exception: pass
         else: away_start_time = None
 
         display_gaze = prediction.replace("-", " ").upper()
