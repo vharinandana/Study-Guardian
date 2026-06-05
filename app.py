@@ -7,7 +7,6 @@ import time
 import os
 import platform
 import threading
-import pyttsx3
 import streamlit as st
 from scipy.io import wavfile
 import io
@@ -20,6 +19,14 @@ try:
 except ModuleNotFoundError:
     gw = None
     WINDOWS_MANAGEMENT_AVAILABLE = False
+
+# 🔒 Safe cross-platform import for offline Text-to-Speech
+try:
+    import pyttsx3
+    TTS_AVAILABLE = True
+except (ModuleNotFoundError, Exception):
+    pyttsx3 = None
+    TTS_AVAILABLE = False
 # --- STREAMLIT CONFIG & INITIAL PAGE SETUP ---
 st.set_page_config(page_title="Study Guardian Workspace", layout="wide", page_icon="🎯")
 
@@ -101,8 +108,11 @@ def play_cross_platform_beep(frequency, duration_ms):
     byte_io = io.BytesIO()
     wavfile.write(byte_io, sample_rate, audio_encoded)
     st.audio(byte_io.getvalue(), format="audio/wav", autoplay=True, key=f"bp_{time.time_ns()}")
-
 def _execute_voice_worker(message):
+    # Only try to trigger voice output if the library successfully imported
+    if not TTS_AVAILABLE or pyttsx3 is None:
+        return  # Safely exit on the cloud server without doing anything
+        
     try:
         engine = pyttsx3.init()
         engine.setProperty('rate', 170)
@@ -110,7 +120,8 @@ def _execute_voice_worker(message):
         engine.runAndWait()
         engine.stop()
         del engine  
-    except Exception: pass
+    except Exception: 
+        pass
     finally: st.session_state.voice_active = False
 
 def speak_warning_async(message):
