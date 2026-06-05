@@ -5,15 +5,21 @@ import numpy as np
 import pandas as pd 
 import time
 import os
-from plyer import notification
-import pygetwindow as gw
-from ultralytics import YOLO
+import platform
 import threading
 import pyttsx3
 import streamlit as st
 from scipy.io import wavfile
 import io
+from ultralytics import YOLO
 
+# 🔒 Safe cross-platform import for application window tracking
+try:
+    import pygetwindow as gw
+    WINDOWS_MANAGEMENT_AVAILABLE = True
+except ModuleNotFoundError:
+    gw = None
+    WINDOWS_MANAGEMENT_AVAILABLE = False
 # --- STREAMLIT CONFIG & INITIAL PAGE SETUP ---
 st.set_page_config(page_title="Study Guardian Workspace", layout="wide", page_icon="🎯")
 
