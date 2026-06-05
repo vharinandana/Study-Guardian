@@ -7,3 +7,4 @@ pandas
 numpy
 pygetwindow; platform_system=="Windows"
 pyautogui; platform_system=="Windows"
+plyer
