@@ -5,5 +5,4 @@ mediapipe; python_version < "3.12" and platform_system == "Windows"
 ultralytics
 scikit-learn
 pandas
-numpy<2.0.0
 pygetwindow; platform_system=="Windows"
