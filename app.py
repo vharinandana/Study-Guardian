@@ -56,22 +56,11 @@ if not os.path.exists(FACE_DATA_DIR):
 # --- CORE RESOURCE OPTIMIZATION (CACHED MODEL LOADING) ---
 @st.cache_resource
 def load_core_models():
-    # 1. Initialize MediaPipe Face Mesh safely
-    try:
-        mp_face_mesh = mp.solutions.face_mesh
-    except AttributeError:
-        try:
-            import mediapipe.python.solutions.face_mesh as mp_face_mesh
-        except ModuleNotFoundError:
-            from mediapipe.framework.formats import landmark_pb2
-            mp_face_mesh = mp.components.processors.FaceLandmarker
-            
-    # 2. Load your custom Gaze Model classifier
-    model = joblib.load('gaze_model.pkl')
-    
-    # 3. Load the YOLOv8 model
-    object_model = YOLO('yolov8n.pt')
-    
+    mp_face_mesh = mp.solutions.face_mesh
+
+    model = joblib.load("gaze_model.pkl")
+    object_model = YOLO("yolov8n.pt")
+
     return mp_face_mesh, model, object_model
 
 face_mesh, model, object_model = load_core_models()
