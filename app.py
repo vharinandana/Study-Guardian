@@ -54,12 +54,16 @@ if not os.path.exists(FACE_DATA_DIR):
 
 # --- CORE RESOURCE OPTIMIZATION (CACHED MODEL LOADING) ---
 @st.cache_resource
+@st.cache_resource
 def load_core_models():
-    mp_face_mesh = mp.solutions.face_mesh
-    mesh = mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=2) 
-    gaze_mdl = joblib.load('gaze_model.pkl')
-    obj_mdl = YOLO("yolov8n.pt")
-    return mesh, gaze_mdl, obj_mdl
+    # Direct explicit import to bypass Python 3.14 dynamic mapping bugs
+    from mediapipe.python.solutions import face_mesh as mp_face_mesh
+    
+    # Keep the rest of your model loading lines exactly the same:
+    # model = joblib.load('gaze_model.pkl')
+    # object_model = YOLO('yolov8n.pt')
+    
+    return mp_face_mesh, model, object_model
 
 face_mesh, model, object_model = load_core_models()
 
