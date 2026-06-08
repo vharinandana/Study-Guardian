@@ -9,7 +9,6 @@ import threading
 import streamlit as st
 from scipy.io import wavfile
 import io
-from ultralytics import YOLO
 
 import mediapipe as mp
 
@@ -60,23 +59,30 @@ USER_MAP_PATH = "user_map.pkl"
 if not os.path.exists(FACE_DATA_DIR):
     os.makedirs(FACE_DATA_DIR)
 
-# --- CORE RESOURCE OPTIMIZATION (CACHED MODEL LOADING) ---
 @st.cache_resource
 def load_core_models():
     import mediapipe as mp
 
     try:
-        mp_face_mesh = mp.solutions.face_mesh
+        return mp.solutions.face_mesh.FaceMesh(
+            static_image_mode=False,
+            max_num_faces=2,
+            refine_landmarks=True,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        )
     except Exception:
-        from mediapipe.python.solutions import face_mesh
-        mp_face_mesh = face_mesh
+        from mediapipe.python.solutions.face_mesh import FaceMesh
 
-    model = joblib.load("gaze_model.pkl")
-    object_model = YOLO("yolov8n.pt")
+        return FaceMesh(
+            static_image_mode=False,
+            max_num_faces=2,
+            refine_landmarks=True,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        )
 
-    return mp_face_mesh, model, object_model
-
-face_mesh, model, object_model = load_core_models()
+face_mesh = load_core_models()
 
 def get_face_recognizer():
     recognizer = cv2.face.LBPHFaceRecognizer_create()
@@ -388,19 +394,9 @@ elif st.session_state.app_step == "ACTIVE_SESSION":
             if eye_height < 0.008: prediction = "closed"
             elif nose_height_ratio > 0.68: prediction = "downward"
             else:
-                features_df = pd.DataFrame([[iris_pos, eye_width, nose_relative_pos, face_symmetry]], columns=['iris_pos', 'eye_width', 'nose_relative_pos', 'face_symmetry'])
-                try:
-                    raw_prediction = model.predict(features_df)[0]
-                    probabilities = model.predict_proba(features_df)[0]
-                    # Lowercase conversion protects the categorization logic strings
-                    prediction = raw_prediction.lower() if (probabilities[list(model.classes_).index(raw_prediction)] >= 0.75) else "center"
-                except Exception: prediction = "center"
+                prediction = "center"
 
         phone_in_view = False
-        if st.session_state.total_frames % 6 == 0:
-            obj_results = object_model(frame, verbose=False)[0]
-            for box in obj_results.boxes:
-                if object_model.names[int(box.cls[0])] in ["cell phone"]: phone_in_view = True
 
         if num_faces_detected > 1:
             prediction = "multi-face distraction"

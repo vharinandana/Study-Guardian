@@ -1,8 +1,8 @@
 streamlit
 opencv-contrib-python-headless
 mediapipe==0.10.14
-ultralytics
 scikit-learn
 pandas
 joblib
 scipy
+pyttsx3
