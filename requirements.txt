@@ -1,8 +1,8 @@
 streamlit
-opencv-contrib-python-headless
+opencv-python-headless==4.9.0.80
 mediapipe==0.10.14
-scikit-learn
+numpy
 pandas
 joblib
 scipy
-pyttsx3
+scikit-learn
