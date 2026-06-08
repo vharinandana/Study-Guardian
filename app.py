@@ -63,7 +63,13 @@ if not os.path.exists(FACE_DATA_DIR):
 # --- CORE RESOURCE OPTIMIZATION (CACHED MODEL LOADING) ---
 @st.cache_resource
 def load_core_models():
-    mp_face_mesh = mp.solutions.face_mesh
+    import mediapipe as mp
+
+    try:
+        mp_face_mesh = mp.solutions.face_mesh
+    except Exception:
+        from mediapipe.python.solutions import face_mesh
+        mp_face_mesh = face_mesh
 
     model = joblib.load("gaze_model.pkl")
     object_model = YOLO("yolov8n.pt")
