@@ -1,7 +1,9 @@
-streamlit
+streamlit==1.36.0
+numpy==1.26.4
 opencv-python-headless==4.9.0.80
-numpy
-pandas
-joblib
-scipy
-scikit-learn
+mediapipe==0.10.14
+pandas==2.2.2
+joblib==1.4.2
+scipy==1.13.1
+scikit-learn==1.5.1
+ultralytics==8.2.70
