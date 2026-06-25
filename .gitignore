@@ -13,10 +13,9 @@ __pycache__/
 gaze_data.csv
 
 # Large Machine Learning Models
-gaze_model.pkl
 face_recognizer_model.yml
 user_map.pkl
-yolov8n.pt
+
 
 # User Biometric Images Folder
 face_data/
